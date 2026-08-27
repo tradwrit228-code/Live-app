@@ -45,7 +45,7 @@
 ##############################################################################
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+DEFAULT_JVM_OPTS='-Xmx64m -Xms64m'
 
 APP_NAME="gradlew"
 APP_BASE_NAME=`basename "$0"`
@@ -53,11 +53,11 @@ APP_BASE_NAME=`basename "$0"`
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD="maximum"
 
-warn ( ) {
+warn() {
     echo "$*" >&2
 }
 
-die ( ) {
+die() {
     echo
     echo "$*"
     echo
@@ -80,22 +80,20 @@ case "`uname`" in
     ;;
 esac
 
-PROG="$0"
-WRAPPER_SCRIPT_DIR=`cd "$(dirname "$PROG")" >/dev/null && pwd`
-WRAPPER_SCRIPT_NAME=`basename "$PROG"`
-WRAPPER_JAR="$WRAPPER_SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar"
-WRAPPER_PROPERTIES="$WRAPPER_SCRIPT_DIR/gradle/wrapper/gradle-wrapper.properties"
-BOOTSTRAP_CLASSPATH_OVERRIDE="${WRAPPER_BOOTSTRAP_CLASSPATH_OVERRIDE:-}"
+SCRIPT_DIR=`cd "$(dirname "$0")" >/dev/null && pwd`
 
-# Determine if bash or sh should be used
-if [ "$NONSTOP" = "true" ] ; then
-    sh_runner="sh"
-else
-    if [ -z "$SHELL" ]; then
-        sh_runner="sh"
-    else
-        sh_runner="$SHELL"
-    fi
+# When this is the first time the script is run with the Gradle Wrapper, download Gradle
+if [ ! -d "$SCRIPT_DIR/gradle/wrapper" ] ; then
+    echo "ERROR: Gradle wrapper not found" >&2
+    exit 1
+fi
+
+WRAPPER_JAR="$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar"
+WRAPPER_PROPERTIES="$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.properties"
+
+if [ ! -f "$WRAPPER_JAR" ] || [ ! -f "$WRAPPER_PROPERTIES" ] ; then
+    echo "ERROR: Gradle wrapper files not found" >&2
+    exit 1
 fi
 
 # Determine the Java command to use to start the JVM.
@@ -127,52 +125,8 @@ fi
 # For Cygwin or MSYS issue warning about paths
 if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
     APP_HOME=`cygpath --path -m "$APP_HOME"`
-    CP="`cygpath -wp "$CLASSPATH"`"
-    CLASSPATH="$CP"
-    WRAPPER_JAR=`cygpath --path -m "$WRAPPER_JAR"`
-    WRAPPER_PROPERTIES=`cygpath --path -m "$WRAPPER_PROPERTIES"`
-fi
-
-# Escape application home for MinGW bash on Windows.
-if [ "$OSTYPE" = "msys" ] ; then
-    APP_HOME="`(cd "$APP_HOME" && pwd -W)`"
-fi
-
-APP_HOME_PARENT="$(dirname "$APP_HOME")"
-BOOTSTRAP_CLASSPATH="$WRAPPER_JAR"
-
-# Determine the main class
-MAIN_CLASS="org.gradle.wrapper.GradleWrapperMain"
-
-# Usually the classpath is not needed, but in some edge cases the user
-# may have customized gradle.properties and the Gradle wrapper should
-# be bootstrapped with a custom classpath.
-if [ ! -z "$BOOTSTRAP_CLASSPATH_OVERRIDE" ] ; then
-    CLASSPATH="$BOOTSTRAP_CLASSPATH_OVERRIDE"
-else
-    CLASSPATH="$BOOTSTRAP_CLASSPATH"
-fi
-
-# Determine the Java command to use to start the JVM.
-if [ -n "$JAVA_HOME" ] ; then
-    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
-        # IBM's JDK on AIX uses strange locations for the executables
-        JAVACMD="$JAVA_HOME/jre/sh/java"
-    else
-        JAVACMD="$JAVA_HOME/bin/java"
-    fi
-    if [ ! -x "$JAVACMD" ] ; then
-        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
-
-Please set the JAVA_HOME variable in your environment to match the
-location of your Java installation."
-    fi
-else
-    JAVACMD="java"
-    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
-
-Please set the JAVA_HOME variable in your environment to match the
-location of your Java installation."
+    CLASSPATH=`cygpath --path -m "$CLASSPATH"`
+    JAVACMD=`cygpath --windows "$JAVACMD"`
 fi
 
 # Increase the maximum file descriptors if we can.
@@ -199,23 +153,40 @@ fi
 # For Cygwin or MSYS convert paths
 if [ "$cygwin" = "true" ] ; then
     APP_HOME=`cygpath --path --mixed "$APP_HOME"`
-    CP="`cygpath --path --mixed "$CLASSPATH"`"
-    CLASSPATH="$CP"
-    WRAPPER_JAR=`cygpath --path --mixed "$WRAPPER_JAR"`
-    WRAPPER_PROPERTIES=`cygpath --path --mixed "$WRAPPER_PROPERTIES"`
+    CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
+    JAVACMD=`cygpath --windows "$JAVACMD"`
 fi
 
-# Collect all arguments for the java command;
-#   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of
-#   * shell commands, such as variables, or quoted strings,
-#   * so we must use eval to properly construct the java command line
-#   * We use double quotes to make variable expansion work,
-#   * but we have to quote every single variable or expression
-#   * to make sure the shell treats them as atomic units.
-#
-# Splitting the LINE into an array ARGS is the best way to handle
-# the command line in Bash. Split the command line at a space so we
-# can handle paths that contain spaces.
-set -- "$WRAPPER_JAR" "$WRAPPER_PROPERTIES" "$@"
+# Collect all arguments for the java command, stacking in reverse order:
+#   * args from the command line
+#   * the main class name
+#   * -classpath
+#   * -D...=... (properties)
+#   * -Xms...
+#   * -Xmx...
+#   * the gradle wrapper jar
+#   * and then the gradle task being invoked or specified
 
-exec "$JAVACMD" "${DEFAULT_JVM_OPTS[@]}" $GRADLE_OPTS -classpath "$CLASSPATH" $MAIN_CLASS "$@"
+for arg in "$@" ; do
+    case $arg in
+        -*)
+            if [ -z "$sourcefile" ] ; then
+                eval "set -- $arg \"$@\""
+            else
+                eval "set -- \"$arg\" \"$@\""
+            fi
+            ;;
+        *)
+            if [ -z "$sourcefile" ] ; then
+                sourcefile=$arg
+            else
+                eval "set -- \"$arg\" \"$@\""
+            fi
+            ;;
+    esac
+done
+
+exec "$JAVACMD" $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS \
+    -classpath "$WRAPPER_JAR" \
+    org.gradle.wrapper.GradleWrapperMain \
+    "$@"
