@@ -23,6 +23,7 @@ import com.example.ui.components.ArCameraHud
 import com.example.ui.components.ArTourClipViewer
 import com.example.ui.components.ExplorerPassportSheet
 import com.example.ui.components.HistoryDossierSheet
+import com.example.ui.components.LandmarkReviewsSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,10 +41,14 @@ fun LandmarkHomeScreen(
     val selectedVoice by viewModel.selectedVoice.collectAsState()
     val audioState by viewModel.audioState.collectAsState()
     val savedTours by viewModel.savedTours.collectAsState()
+    val currentReviews by viewModel.currentReviews.collectAsState()
+    val currentAverageRating by viewModel.currentAverageRating.collectAsState()
+    val currentReviewCount by viewModel.currentReviewCount.collectAsState()
     val customApiKey by viewModel.customApiKey.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     var showHistoryDossier by remember { mutableStateOf(false) }
+    var showReviewsSheet by remember { mutableStateOf(false) }
     var showPassportSheet by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
 
@@ -83,6 +88,8 @@ fun LandmarkHomeScreen(
                     selectedHotspot = selectedHotspot,
                     selectedEra = selectedEra,
                     selectedVoice = selectedVoice,
+                    averageRating = currentAverageRating,
+                    reviewCount = currentReviewCount,
                     onSelectHotspot = { viewModel.selectHotspot(it) },
                     onSelectEra = { viewModel.setHistoricalEra(it) },
                     onSelectVoice = { viewModel.setVoice(it) },
@@ -91,6 +98,7 @@ fun LandmarkHomeScreen(
                     onSeekAudio = { viewModel.seekAudio(it) },
                     onSpeedChange = { viewModel.setSpeed(it) },
                     onOpenDossier = { showHistoryDossier = true },
+                    onOpenReviews = { showReviewsSheet = true },
                     onBackToCamera = { viewModel.resetToCamera() },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -113,7 +121,31 @@ fun LandmarkHomeScreen(
             HistoryDossierSheet(
                 recognition = currentRecognition!!,
                 dossier = currentDossier!!,
-                onDismiss = { showHistoryDossier = false }
+                onDismiss = { showHistoryDossier = false },
+                onOpenReviews = { showReviewsSheet = true }
+            )
+        }
+
+        // Community Reviews & Rating Sheet
+        if (showReviewsSheet && currentRecognition != null) {
+            LandmarkReviewsSheet(
+                landmarkName = currentRecognition!!.landmarkName,
+                city = currentRecognition!!.city,
+                reviews = currentReviews,
+                averageRating = currentAverageRating,
+                onDismiss = { showReviewsSheet = false },
+                onSubmitReview = { rating, author, text, tag ->
+                    viewModel.submitReview(
+                        landmarkName = currentRecognition!!.landmarkName,
+                        authorName = author,
+                        rating = rating,
+                        reviewText = text,
+                        tag = tag
+                    )
+                },
+                onDeleteReview = { review ->
+                    viewModel.deleteReview(review)
+                }
             )
         }
 

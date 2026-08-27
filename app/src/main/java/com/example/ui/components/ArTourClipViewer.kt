@@ -44,8 +44,10 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -119,6 +121,8 @@ fun ArTourClipViewer(
     selectedHotspot: ArHotspot?,
     selectedEra: HistoricalEraView,
     selectedVoice: String,
+    averageRating: Double? = null,
+    reviewCount: Int = 0,
     onSelectHotspot: (ArHotspot?) -> Unit,
     onSelectEra: (HistoricalEraView) -> Unit,
     onSelectVoice: (String) -> Unit,
@@ -127,6 +131,7 @@ fun ArTourClipViewer(
     onSeekAudio: (Float) -> Unit,
     onSpeedChange: (Float) -> Unit,
     onOpenDossier: () -> Unit,
+    onOpenReviews: () -> Unit = {},
     onBackToCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -366,47 +371,98 @@ fun ArTourClipViewer(
                 Surface(
                     color = ImmersiveGlassDark,
                     shape = RoundedCornerShape(20.dp),
-                    border = BorderStroke(1.dp, ImmersiveGlassBorder)
+                    border = BorderStroke(1.dp, ImmersiveGlassBorder),
+                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable { onOpenReviews() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = recognition.landmarkName,
                             color = ImmersiveTextPrimary,
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "• ${recognition.city}",
                             color = ImmersiveAmberGold,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
+                        if (averageRating != null || reviewCount > 0) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                color = ImmersiveAmberGold.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = ImmersiveAmberGold,
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = String.format(java.util.Locale.US, "%.1f (%d)", averageRating ?: 5.0, reviewCount),
+                                        color = ImmersiveAmberGold,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // History Dossier Trigger
-            Surface(
-                color = ImmersiveGlassDark,
-                shape = CircleShape,
-                border = BorderStroke(1.dp, ImmersiveAmberGold.copy(alpha = 0.6f)),
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .clickable { onOpenDossier() }
-                    .testTag("open_history_dossier_button")
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "History Dossier",
-                        tint = ImmersiveAmberGold,
-                        modifier = Modifier.size(22.dp)
-                    )
+            // Top Right Action Buttons (Reviews & History Dossier)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Reviews Trigger
+                Surface(
+                    color = ImmersiveGlassDark,
+                    shape = CircleShape,
+                    border = BorderStroke(1.dp, ImmersiveAmberGold.copy(alpha = 0.7f)),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable { onOpenReviews() }
+                        .testTag("open_reviews_top_button")
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Reviews & Ratings",
+                            tint = ImmersiveAmberGold,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // History Dossier Trigger
+                Surface(
+                    color = ImmersiveGlassDark,
+                    shape = CircleShape,
+                    border = BorderStroke(1.dp, ImmersivePurplePrimary.copy(alpha = 0.7f)),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable { onOpenDossier() }
+                        .testTag("open_history_dossier_button")
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = "History Dossier",
+                            tint = ImmersivePurplePrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
@@ -640,35 +696,74 @@ fun ArTourClipViewer(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Deep History Dossier Sheet Button
-            Surface(
-                color = ImmersivePurplePrimary,
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onOpenDossier() }
-                    .testTag("explore_full_history_button")
+            // Bottom Action Row: History Dossier & Community Reviews
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                // Community Reviews Button
+                Surface(
+                    color = ImmersiveSurfaceElevated,
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, ImmersiveAmberGold.copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onOpenReviews() }
+                        .testTag("explore_reviews_button")
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.TravelExplore,
-                        contentDescription = null,
-                        tint = ImmersiveDarkBg,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "VIEW SEARCH-GROUNDED HISTORY DOSSIER",
-                        color = ImmersiveDarkBg,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace
-                    )
+                    Row(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.RateReview,
+                            contentDescription = null,
+                            tint = ImmersiveAmberGold,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "AVIS (${reviewCount})",
+                            color = ImmersiveAmberGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+
+                // Deep History Dossier Sheet Button
+                Surface(
+                    color = ImmersivePurplePrimary,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .weight(1.3f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onOpenDossier() }
+                        .testTag("explore_full_history_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TravelExplore,
+                            contentDescription = null,
+                            tint = ImmersiveDarkBg,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "DOSSIER HISTORIQUE",
+                            color = ImmersiveDarkBg,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
                 }
             }
         }

@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.audio.NarrationAudioManager
 import com.example.data.db.LandmarkDatabase
+import com.example.data.db.LandmarkReviewEntity
 import com.example.data.db.LandmarkTourEntity
 import com.example.data.network.GeminiApiClient
 import com.example.data.repository.CuratedCityLandmark
@@ -18,15 +19,19 @@ import com.example.model.HistoricalEraView
 import com.example.model.LandmarkRecognitionResult
 import com.example.model.TimelineMilestone
 import com.example.model.TourPipelineStep
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LandmarkViewModel(application: Application) : AndroidViewModel(application) {
 
     private val geminiClient = GeminiApiClient()
@@ -47,6 +52,42 @@ class LandmarkViewModel(application: Application) : AndroidViewModel(application
 
     private val _currentRecognition = MutableStateFlow<LandmarkRecognitionResult?>(null)
     val currentRecognition: StateFlow<LandmarkRecognitionResult?> = _currentRecognition.asStateFlow()
+
+    val currentReviews: StateFlow<List<LandmarkReviewEntity>> = _currentRecognition.flatMapLatest { recognition ->
+        if (recognition != null) {
+            repository.getReviewsForLandmark(recognition.landmarkName)
+        } else {
+            flowOf(emptyList())
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    val currentAverageRating: StateFlow<Double?> = _currentRecognition.flatMapLatest { recognition ->
+        if (recognition != null) {
+            repository.getAverageRatingForLandmark(recognition.landmarkName)
+        } else {
+            flowOf(null)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    val currentReviewCount: StateFlow<Int> = _currentRecognition.flatMapLatest { recognition ->
+        if (recognition != null) {
+            repository.getReviewCountForLandmark(recognition.landmarkName)
+        } else {
+            flowOf(0)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
 
     private val _currentDossier = MutableStateFlow<HistoricalDossier?>(null)
     val currentDossier: StateFlow<HistoricalDossier?> = _currentDossier.asStateFlow()
@@ -78,6 +119,10 @@ class LandmarkViewModel(application: Application) : AndroidViewModel(application
     val audioState = audioManager.playerState
 
     init {
+        // Seed authentic community reviews if empty
+        viewModelScope.launch {
+            repository.seedDefaultReviewsIfEmpty()
+        }
         // Auto-select the first curated landmark for immediate testable preview
         selectSampleLandmark(sampleLandmarks.first(), autoPlay = false)
     }
@@ -310,6 +355,30 @@ class LandmarkViewModel(application: Application) : AndroidViewModel(application
     fun deleteTour(entity: LandmarkTourEntity) {
         viewModelScope.launch {
             repository.deleteTour(entity)
+        }
+    }
+
+    fun submitReview(
+        landmarkName: String,
+        authorName: String,
+        rating: Int,
+        reviewText: String,
+        tag: String = "Explorer"
+    ) {
+        viewModelScope.launch {
+            repository.submitReview(
+                landmarkName = landmarkName,
+                authorName = authorName,
+                rating = rating,
+                reviewText = reviewText,
+                tag = tag
+            )
+        }
+    }
+
+    fun deleteReview(review: LandmarkReviewEntity) {
+        viewModelScope.launch {
+            repository.deleteReview(review)
         }
     }
 

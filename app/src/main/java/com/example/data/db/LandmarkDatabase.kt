@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [LandmarkTourEntity::class], version = 1, exportSchema = false)
+@Database(entities = [LandmarkTourEntity::class, LandmarkReviewEntity::class], version = 2, exportSchema = false)
 abstract class LandmarkDatabase : RoomDatabase() {
     abstract fun landmarkDao(): LandmarkDao
 

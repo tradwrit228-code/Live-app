@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import com.example.R
 import com.example.data.db.LandmarkDao
+import com.example.data.db.LandmarkReviewEntity
 import com.example.data.db.LandmarkTourEntity
 import com.example.data.network.GeminiApiClient
 import com.example.model.ArHotspot
@@ -249,6 +250,120 @@ class LandmarkRepository(
 
     suspend fun deleteTour(tour: LandmarkTourEntity) = withContext(Dispatchers.IO) {
         landmarkDao.deleteTour(tour)
+    }
+
+    // User Reviews and Ratings
+    fun getReviewsForLandmark(landmarkName: String): Flow<List<LandmarkReviewEntity>> {
+        return landmarkDao.getReviewsForLandmark(landmarkName)
+    }
+
+    fun getAllReviews(): Flow<List<LandmarkReviewEntity>> {
+        return landmarkDao.getAllReviews()
+    }
+
+    fun getAverageRatingForLandmark(landmarkName: String): Flow<Double?> {
+        return landmarkDao.getAverageRatingForLandmark(landmarkName)
+    }
+
+    fun getReviewCountForLandmark(landmarkName: String): Flow<Int> {
+        return landmarkDao.getReviewCountForLandmark(landmarkName)
+    }
+
+    suspend fun submitReview(
+        landmarkName: String,
+        authorName: String,
+        rating: Int,
+        reviewText: String,
+        tag: String = "Explorer"
+    ): Long = withContext(Dispatchers.IO) {
+        val review = LandmarkReviewEntity(
+            landmarkName = landmarkName,
+            authorName = authorName.ifBlank { "Anonymous Explorer" },
+            rating = rating.coerceIn(1, 5),
+            reviewText = reviewText.trim(),
+            tag = tag,
+            timestamp = System.currentTimeMillis()
+        )
+        landmarkDao.insertReview(review)
+    }
+
+    suspend fun deleteReview(review: LandmarkReviewEntity) = withContext(Dispatchers.IO) {
+        landmarkDao.deleteReview(review)
+    }
+
+    suspend fun seedDefaultReviewsIfEmpty() = withContext(Dispatchers.IO) {
+        val defaultReviews = listOf(
+            // Eiffel Tower Reviews
+            LandmarkReviewEntity(
+                landmarkName = "Eiffel Tower",
+                authorName = "Claire Dubois",
+                rating = 5,
+                reviewText = "L'expérience en réalité augmentée révèle des détails architecturaux saisissants sur la tour! Le récit audio sur l'appartement secret de Gustave Eiffel est fascinant.",
+                tag = "🏛 Architecture",
+                timestamp = System.currentTimeMillis() - 86400000L * 2
+            ),
+            LandmarkReviewEntity(
+                landmarkName = "Eiffel Tower",
+                authorName = "Marc & Sophie",
+                rating = 5,
+                reviewText = "Vue imprenable au coucher du soleil. Les points d'ancrage AR nous ont permis d'apprécier la complexité des 2,5 millions de rivets en fer forgé.",
+                tag = "🌅 Sunset View",
+                timestamp = System.currentTimeMillis() - 86400000L * 5
+            ),
+            LandmarkReviewEntity(
+                landmarkName = "Eiffel Tower",
+                authorName = "Elena Vance",
+                rating = 4,
+                reviewText = "Magnifique monument incontournable. L'analyse photo a reconnu le monument instantanément même avec une météo nuageuse.",
+                tag = "📸 Photography",
+                timestamp = System.currentTimeMillis() - 86400000L * 9
+            ),
+
+            // Colosseum Reviews
+            LandmarkReviewEntity(
+                landmarkName = "Colosseum",
+                authorName = "Matteo Rossi",
+                rating = 5,
+                reviewText = "La visite de l'hypogée en réalité augmentée donne des frissons! On comprend enfin comment fonctionnaient les monte-charges pour les gladiateurs et les fauves.",
+                tag = "📜 Histoire",
+                timestamp = System.currentTimeMillis() - 86400000L * 3
+            ),
+            LandmarkReviewEntity(
+                landmarkName = "Colosseum",
+                authorName = "Anna K.",
+                rating = 5,
+                reviewText = "Monument grandiose chargé d'histoire. L'audio guide IA avec le filtre d'époque antique nous plonge véritablement en l'an 80 après J.-C.",
+                tag = "🏛 Architecture",
+                timestamp = System.currentTimeMillis() - 86400000L * 7
+            ),
+            LandmarkReviewEntity(
+                landmarkName = "Colosseum",
+                authorName = "Julien D.",
+                rating = 4,
+                reviewText = "Très impressionnant de voir la superposition des trois ordres de colonnes doriques, ioniques et corinthiennes.",
+                tag = "🎒 Solo Explorer",
+                timestamp = System.currentTimeMillis() - 86400000L * 12
+            ),
+
+            // Big Ben Reviews
+            LandmarkReviewEntity(
+                landmarkName = "Big Ben & Elizabeth Tower",
+                authorName = "James Thornton",
+                rating = 5,
+                reviewText = "The clock face restoration with Prussian blue hands looks breathtaking in person. Hearing the historic 13.7-ton chime story was wonderful!",
+                tag = "✨ Historic Charm",
+                timestamp = System.currentTimeMillis() - 86400000L * 4
+            ),
+            LandmarkReviewEntity(
+                landmarkName = "Big Ben & Elizabeth Tower",
+                authorName = "Camille Leroy",
+                rating = 5,
+                reviewText = "Un symbole intemporel de Londres. L'anecdote sur les anciennes pièces de penny pour régler le balancier est incroyable.",
+                tag = "📸 Photography",
+                timestamp = System.currentTimeMillis() - 86400000L * 8
+            )
+        )
+        landmarkDao.insertReviews(defaultReviews)
     }
 
     fun loadBitmapFromResource(resId: Int): Bitmap {

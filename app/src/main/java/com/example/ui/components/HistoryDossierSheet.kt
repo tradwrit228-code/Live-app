@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TipsAndUpdates
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,6 +70,7 @@ fun HistoryDossierSheet(
     recognition: LandmarkRecognitionResult,
     dossier: HistoricalDossier,
     onDismiss: () -> Unit,
+    onOpenReviews: (() -> Unit)? = null,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
     modifier: Modifier = Modifier
 ) {
@@ -384,6 +387,72 @@ fun HistoryDossierSheet(
                             fontSize = 13.sp,
                             lineHeight = 18.sp
                         )
+                    }
+                }
+            }
+
+            // Community Reviews & Feedback CTA
+            if (onOpenReviews != null) {
+                item {
+                    Surface(
+                        color = ImmersiveSurfaceElevated,
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, ImmersiveAmberGold.copy(alpha = 0.6f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                onDismiss()
+                                onOpenReviews()
+                            }
+                            .testTag("dossier_open_reviews_button")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    color = ImmersiveAmberGold.copy(alpha = 0.15f),
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.RateReview,
+                                            contentDescription = null,
+                                            tint = ImmersiveAmberGold,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "AVIS & RETOURS DE VISITEURS",
+                                        color = ImmersiveAmberGold,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Text(
+                                        text = "Voir les notes et laisser votre expérience",
+                                        color = ImmersiveTextSecondary,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "OUVRIR →",
+                                color = ImmersiveAmberGold,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
                 }
             }
