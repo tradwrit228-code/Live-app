@@ -1,0 +1,6 @@
+{
+  "name": "Landmark AR",
+  "description": "Photo tourism app that recognizes city landmarks with AI vision, fetches historical facts via Google Search, and presents an interactive AR narrated audio clip tour.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
