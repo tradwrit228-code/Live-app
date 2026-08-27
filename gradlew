@@ -45,7 +45,7 @@
 ##############################################################################
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS='"\-Xmx64m\" "-Xms64m"'
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
 
 APP_NAME="gradlew"
 APP_BASE_NAME=`basename "$0"`
@@ -218,4 +218,4 @@ fi
 # can handle paths that contain spaces.
 set -- "$WRAPPER_JAR" "$WRAPPER_PROPERTIES" "$@"
 
-exec "$JAVACMD" "${DEFAULT_JVM_OPTS[@]}" "$GRADLE_OPTS" -classpath "$CLASSPATH" "$MAIN_CLASS" "$@"
+exec "$JAVACMD" "${DEFAULT_JVM_OPTS[@]}" $GRADLE_OPTS -classpath "$CLASSPATH" $MAIN_CLASS "$@"
